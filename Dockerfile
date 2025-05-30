@@ -1,5 +1,5 @@
 # Base image
-FROM python:3.8-slim
+FROM --platform=linux/amd64 python:3.8-slim
 
 # Set working directory
 WORKDIR /app
@@ -8,7 +8,7 @@ WORKDIR /app
 COPY requirements.txt .
 
 # Install dependencies
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy project files
 COPY . .

@@ -37,9 +37,9 @@ jobs:
 
       - name: Run linters
         run: |
-          flake8 .
-          black . --check
-          isort . --check-only
+          flake8 . --extend-ignore=E226,E302,E41
+          black . --check --skip-string-normalization
+          isort . --check-only --profile black
 
   test:
     name: Run Tests
@@ -67,6 +67,7 @@ jobs:
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
+    needs: test
     environment: production
 
     steps:

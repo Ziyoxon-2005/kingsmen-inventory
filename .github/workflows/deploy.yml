@@ -65,19 +65,16 @@ jobs:
         mkdir -p staticfiles
         mkdir -p media
         
-    - name: Setup Database
-      run: |
-        python manage.py makemigrations dashboard
-        python manage.py makemigrations user
-        python manage.py migrate
-        
     - name: Run tests
       env:
         DJANGO_SETTINGS_MODULE: inventoryproject.settings
         SECRET_KEY: test-key-for-ci
         DEBUG: 'True'
+        ALLOWED_HOSTS: localhost,127.0.0.1
+        DATABASE_URL: sqlite:///db.sqlite3
       run: |
-        python manage.py collectstatic --noinput
+        python manage.py makemigrations
+        python manage.py migrate
         python manage.py test
         
   deploy:

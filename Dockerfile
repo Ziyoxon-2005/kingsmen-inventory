@@ -13,8 +13,11 @@ RUN pip install -r requirements.txt
 # Copy project files
 COPY . .
 
+# Collect static files
+RUN python manage.py collectstatic --noinput
+
 # Expose port
 EXPOSE 8000
 
 # Run application
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"] 
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "inventoryproject.wsgi:application"] 

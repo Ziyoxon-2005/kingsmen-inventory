@@ -14,6 +14,7 @@ env:
   ECS_CLUSTER: kingsmen-cluster-new
   ECS_TASK_DEFINITION: task-definition.json
   CONTAINER_NAME: kingsmen-container
+  ECR_REPOSITORY: kingsmen-inventory
 
 jobs:
   lint:
@@ -90,9 +91,10 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -t $ECR_REGISTRY/${{ env.CONTAINER_NAME }}:$IMAGE_TAG .
-          docker push $ECR_REGISTRY/${{ env.CONTAINER_NAME }}:$IMAGE_TAG
-          echo "image=$ECR_REGISTRY/${{ env.CONTAINER_NAME }}:$IMAGE_TAG" >> $GITHUB_OUTPUT
+          aws ecr create-repository --repository-name ${{ env.ECR_REPOSITORY }} --region ${{ env.AWS_REGION }} || true
+          docker build -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG
+          echo "image=$ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
       - name: Fill in the new image ID in the Amazon ECS task definition
         id: task-def

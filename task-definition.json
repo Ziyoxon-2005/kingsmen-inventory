@@ -3,7 +3,7 @@
     "containerDefinitions": [
         {
             "name": "kingsmen-container",
-            "image": "kingsmen-inventory:latest",
+            "image": "public.ecr.aws/kingsmen-inventory:latest",
             "cpu": 256,
             "memory": 512,
             "portMappings": [
@@ -40,5 +40,5 @@
     "networkMode": "awsvpc",
     "cpu": "256",
     "memory": "512",
-    "executionRoleArn": "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+    "executionRoleArn": "ecsTaskExecutionRole"
 } 

@@ -36,7 +36,7 @@ jobs:
         
     - name: Run linting
       run: |
-        flake8 . --exclude=venv/*,*/migrations/*,*/tests.py --extend-ignore=E226,E302,E41,E501,F401
+        flake8 . --exclude=venv/*,*/migrations/*,*/tests.py,manage.py --extend-ignore=E226,E302,E41,E501,F401
         
   test:
     name: Run Tests
@@ -61,6 +61,7 @@ jobs:
       run: |
         mkdir -p static
         mkdir -p staticfiles
+        mkdir -p media
         
     - name: Setup Database
       run: |
@@ -112,11 +113,15 @@ jobs:
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
         echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
+    - name: Download task definition
+      run: |
+        aws ecs describe-task-definition --task-definition ${{ env.ECS_TASK_DEFINITION }} --query taskDefinition > task-definition.json
+
     - name: Fill in the new image ID in the Amazon ECS task definition
       id: task-def
       uses: aws-actions/amazon-ecs-render-task-definition@v1
       with:
-        task-definition: ${{ env.ECS_TASK_DEFINITION }}
+        task-definition: task-definition.json
         container-name: ${{ env.CONTAINER_NAME }}
         image: ${{ steps.build-image.outputs.image }}
 

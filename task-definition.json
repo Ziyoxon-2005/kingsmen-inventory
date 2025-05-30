@@ -22,10 +22,12 @@
                 {
                     "name": "DEBUG",
                     "value": "False"
-                },
+                }
+            ],
+            "secrets": [
                 {
                     "name": "DJANGO_SECRET_KEY",
-                    "value": "production-secret-key-here"
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:YOUR_ACCOUNT_ID:secret:DJANGO_SECRET_KEY"
                 }
             ],
             "logConfiguration": {
@@ -44,5 +46,6 @@
     "networkMode": "awsvpc",
     "cpu": "256",
     "memory": "512",
-    "executionRoleArn": "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+    "executionRoleArn": "arn:aws:iam::YOUR_ACCOUNT_ID:role/ecsTaskExecutionRole",
+    "taskRoleArn": "arn:aws:iam::YOUR_ACCOUNT_ID:role/ecsTaskRole"
 } 

@@ -6,12 +6,12 @@
     ],
     "cpu": "256",
     "memory": "512",
-    "executionRoleArn": "arn:aws:iam::YOUR_ACCOUNT_ID:role/ecsTaskExecutionRole",
-    "taskRoleArn": "arn:aws:iam::YOUR_ACCOUNT_ID:role/ecsTaskRole",
+    "executionRoleArn": "arn:aws:iam::521106216357:role/ecsTaskExecutionRole",
+    "taskRoleArn": "arn:aws:iam::521106216357:role/ecsTaskRole",
     "containerDefinitions": [
         {
             "name": "kingsmen-container",
-            "image": "YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/kingsmen-inventory:latest",
+            "image": "521106216357.dkr.ecr.us-east-1.amazonaws.com/kingsmen-inventory:latest",
             "cpu": 256,
             "memory": 512,
             "portMappings": [
@@ -35,7 +35,7 @@
             "secrets": [
                 {
                     "name": "DJANGO_SECRET_KEY",
-                    "valueFrom": "arn:aws:secretsmanager:us-east-1:YOUR_ACCOUNT_ID:secret:DJANGO_SECRET_KEY"
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:521106216357:secret:DJANGO_SECRET_KEY"
                 }
             ],
             "logConfiguration": {

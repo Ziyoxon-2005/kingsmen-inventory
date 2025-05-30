@@ -1,9 +1,17 @@
 {
     "family": "kingsmen-inventory",
+    "networkMode": "awsvpc",
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": "256",
+    "memory": "512",
+    "executionRoleArn": "arn:aws:iam::YOUR_ACCOUNT_ID:role/ecsTaskExecutionRole",
+    "taskRoleArn": "arn:aws:iam::YOUR_ACCOUNT_ID:role/ecsTaskRole",
     "containerDefinitions": [
         {
             "name": "kingsmen-container",
-            "image": "public.ecr.aws/kingsmen-inventory:latest",
+            "image": "YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/kingsmen-inventory:latest",
             "cpu": 256,
             "memory": 512,
             "portMappings": [
@@ -39,13 +47,5 @@
                 }
             }
         }
-    ],
-    "requiresCompatibilities": [
-        "FARGATE"
-    ],
-    "networkMode": "awsvpc",
-    "cpu": "256",
-    "memory": "512",
-    "executionRoleArn": "arn:aws:iam::YOUR_ACCOUNT_ID:role/ecsTaskExecutionRole",
-    "taskRoleArn": "arn:aws:iam::YOUR_ACCOUNT_ID:role/ecsTaskRole"
+    ]
 } 

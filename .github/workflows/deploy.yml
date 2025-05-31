@@ -137,4 +137,6 @@ jobs:
         wait-for-service-stability: true
         force-new-deployment: true
         enable-circuit-breaker: true
-        enable-rollback: true 
+        enable-rollback: true
+        wait-for-minutes: 5
+        deployment-configuration: '{"deploymentCircuitBreaker":{"enable":true,"rollback":true},"maximumPercent":200,"minimumHealthyPercent":50}' 

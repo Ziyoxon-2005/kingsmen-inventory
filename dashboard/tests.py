@@ -21,10 +21,21 @@ class DashboardTest(TestCase):
         os.makedirs(settings.STATIC_ROOT, exist_ok=True)
         
     def test_login_required(self):
-        response = self.client.get(reverse('dashboard-index'))
+        # Get the dashboard URL
+        dashboard_url = reverse('dashboard-index')
+        
+        # Try to access dashboard without login
+        response = self.client.get(dashboard_url)
+        
+        # Should redirect to login page
         self.assertEqual(response.status_code, 302)
+        
+        # Get the expected login URL with next parameter
         login_url = reverse('user-login')
-        self.assertRedirects(response, f'{login_url}?next=/')
+        expected_url = f'{login_url}?next={dashboard_url}'
+        
+        # Check if redirects to the correct URL
+        self.assertEqual(response.url, expected_url)
         
     def test_authenticated_access(self):
         self.client.login(username='testuser', password='testpass123')

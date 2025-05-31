@@ -5,6 +5,7 @@ from .models import Product, Order
 from .forms import ProductForm, OrderForm
 from django.contrib.auth.models import User
 from django.contrib import messages
+from django.http import HttpResponse
 
 @login_required
 def index(request):
@@ -114,3 +115,6 @@ def order(request):
         'products_count': products_count,
     }
     return render(request, 'dashboard/order.html', context)
+
+def health_check(request):
+    return HttpResponse("OK")

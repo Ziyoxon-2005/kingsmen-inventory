@@ -54,7 +54,7 @@
             "healthCheck": {
                 "command": [
                     "CMD-SHELL",
-                    "python manage.py check || exit 1"
+                    "curl -f http://localhost:8000/health/ || exit 1"
                 ],
                 "interval": 30,
                 "timeout": 5,
@@ -64,7 +64,7 @@
             "command": [
                 "sh",
                 "-c",
-                "python manage.py migrate && python manage.py collectstatic --noinput && gunicorn inventoryproject.wsgi:application --bind 0.0.0.0:8000"
+                "python manage.py migrate && python manage.py collectstatic --noinput && gunicorn inventoryproject.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120"
             ]
         }
     ]

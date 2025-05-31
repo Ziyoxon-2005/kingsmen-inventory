@@ -1,8 +1,10 @@
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth.models import User
+from django.test import override_settings
 from .models import Product, Order
 
+@override_settings(STATICFILES_STORAGE='django.contrib.staticfiles.storage.StaticFilesStorage')
 class DashboardTest(TestCase):
     def setUp(self):
         self.client = Client()
@@ -18,12 +20,23 @@ class DashboardTest(TestCase):
     def test_login_required(self):
         response = self.client.get(reverse('dashboard-index'))
         self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, '/user/login/?next=/')
         
     def test_authenticated_access(self):
         self.client.login(username='testuser', password='testpass123')
         response = self.client.get(reverse('dashboard-index'))
         self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'dashboard/index.html')
         
     def test_product_creation(self):
         self.assertEqual(Product.objects.count(), 1)
         self.assertEqual(Product.objects.first().name, 'Test Product')
+
+    def test_context_data(self):
+        self.client.login(username='testuser', password='testpass123')
+        response = self.client.get(reverse('dashboard-index'))
+        self.assertTrue('total_staff' in response.context)
+        self.assertTrue('total_product' in response.context)
+        self.assertTrue('total_order' in response.context)
+        self.assertTrue('orders' in response.context)
+        self.assertTrue('products' in response.context)

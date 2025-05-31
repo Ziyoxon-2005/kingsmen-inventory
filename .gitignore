@@ -74,4 +74,8 @@ env/
 
 # OS
 .DS_Store
-Thumbs.db 
+Thumbs.db
+
+# Allow AWS config files
+!.aws/task-definition.json
+!.aws/cloudwatch-config.json 

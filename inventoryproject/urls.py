@@ -23,6 +23,7 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('dashboard.urls')),
+    path('user/', include('user.urls')),
     path('register/', user_views.register, name='user-register'),
     path('profile/', user_views.profile, name='user-profile'),
     path('', auth_views.LoginView.as_view(
@@ -34,3 +35,6 @@ urlpatterns = [
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL,
                          document_root=settings.MEDIA_ROOT)
+
+# Add trailing slash to URLs
+APPEND_SLASH = True

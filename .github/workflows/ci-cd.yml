@@ -14,9 +14,9 @@ env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY: kingsmen-inventory
   AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-  ECS_CLUSTER: ${{ secrets.ECS_CLUSTER }}
-  ECS_SERVICE: ${{ secrets.ECS_SERVICE }}
-  CONTAINER_NAME: ${{ secrets.CONTAINER_NAME }}
+  ECS_CLUSTER: kingsmen-cluster
+  ECS_SERVICE: kingsmen-service
+  CONTAINER_NAME: kingsmen-container
   DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
   DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
   GRAFANA_PASSWORD: ${{ secrets.GRAFANA_PASSWORD }}
@@ -108,12 +108,14 @@ jobs:
     - name: Update ECS service
       run: |
         aws ecs update-service \
-          --cluster ${{ env.ECS_CLUSTER }} \
-          --service ${{ env.ECS_SERVICE }} \
-          --force-new-deployment
+          --cluster "${{ env.ECS_CLUSTER }}" \
+          --service "${{ env.ECS_SERVICE }}" \
+          --force-new-deployment \
+          --region "${{ env.AWS_REGION }}"
 
     - name: Wait for service stability
       run: |
         aws ecs wait services-stable \
-          --cluster ${{ env.ECS_CLUSTER }} \
-          --services ${{ env.ECS_SERVICE }} 
+          --cluster "${{ env.ECS_CLUSTER }}" \
+          --services "${{ env.ECS_SERVICE }}" \
+          --region "${{ env.AWS_REGION }}" 

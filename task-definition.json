@@ -4,8 +4,8 @@
         "FARGATE"
     ],
     "networkMode": "awsvpc",
-    "cpu": "256",
-    "memory": "512",
+    "cpu": "512",
+    "memory": "1024",
     "executionRoleArn": "arn:aws:iam::521106216357:role/ecsTaskExecutionRole",
     "taskRoleArn": "arn:aws:iam::521106216357:role/ecsTaskRole",
     "containerDefinitions": [
@@ -27,16 +27,20 @@
                 {
                     "name": "DEBUG",
                     "value": "False"
+                },
+                {
+                    "name": "ALLOWED_HOSTS",
+                    "value": "*"
                 }
             ],
             "secrets": [
                 {
                     "name": "DJANGO_SECRET_KEY",
-                    "valueFrom": "arn:aws:ssm:${AWS_REGION}:${AWS_ACCOUNT_ID}:parameter/kingsmen/DJANGO_SECRET_KEY"
+                    "valueFrom": "/kingsmen/DJANGO_SECRET_KEY"
                 },
                 {
                     "name": "DB_PASSWORD",
-                    "valueFrom": "arn:aws:ssm:${AWS_REGION}:${AWS_ACCOUNT_ID}:parameter/kingsmen/DB_PASSWORD"
+                    "valueFrom": "/kingsmen/DB_PASSWORD"
                 }
             ],
             "logConfiguration": {
@@ -44,13 +48,14 @@
                 "options": {
                     "awslogs-group": "/ecs/kingsmen-inventory",
                     "awslogs-region": "${AWS_REGION}",
-                    "awslogs-stream-prefix": "ecs"
+                    "awslogs-stream-prefix": "ecs",
+                    "awslogs-create-group": "true"
                 }
             },
             "healthCheck": {
                 "command": [
                     "CMD-SHELL",
-                    "curl -f http://localhost:8000/health/ || exit 1"
+                    "python manage.py check || exit 1"
                 ],
                 "interval": 30,
                 "timeout": 5,

@@ -23,7 +23,8 @@ class DashboardTest(TestCase):
     def test_login_required(self):
         response = self.client.get(reverse('dashboard-index'))
         self.assertEqual(response.status_code, 302)
-        self.assertRedirects(response, '/user/login/?next=/')
+        login_url = reverse('user-login')
+        self.assertRedirects(response, f'{login_url}?next=/')
         
     def test_authenticated_access(self):
         self.client.login(username='testuser', password='testpass123')
@@ -38,8 +39,13 @@ class DashboardTest(TestCase):
     def test_context_data(self):
         self.client.login(username='testuser', password='testpass123')
         response = self.client.get(reverse('dashboard-index'))
-        self.assertTrue('total_staff' in response.context)
-        self.assertTrue('total_product' in response.context)
-        self.assertTrue('total_order' in response.context)
+        self.assertTrue('workers_count' in response.context)
+        self.assertTrue('products_count' in response.context)
+        self.assertTrue('orders_count' in response.context)
         self.assertTrue('orders' in response.context)
         self.assertTrue('products' in response.context)
+        
+        # Check actual values
+        self.assertEqual(response.context['workers_count'], User.objects.count())
+        self.assertEqual(response.context['products_count'], Product.objects.count())
+        self.assertEqual(response.context['orders_count'], Order.objects.count())

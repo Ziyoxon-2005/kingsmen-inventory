@@ -62,9 +62,7 @@ jobs:
         
     - name: Create static directory
       run: |
-        mkdir -p static
-        mkdir -p staticfiles
-        mkdir -p media
+        mkdir -p test_static test_media
         
     - name: Run tests
       env:
@@ -73,7 +71,6 @@ jobs:
         DEBUG: 'True'
         ALLOWED_HOSTS: localhost,127.0.0.1
       run: |
-        mkdir -p test_static test_media
         python manage.py makemigrations
         python manage.py migrate
         python manage.py collectstatic --noinput --settings=inventoryproject.test_settings
@@ -112,8 +109,8 @@ jobs:
         echo "Registry: $ECR_REGISTRY"
         echo "Repository: ${{ env.ECR_REPOSITORY }}"
         
-        # Build the Docker image
-        docker build -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG .
+        # Build the Docker image with optimized layers
+        docker build --no-cache --pull -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG .
         
         # Push the image to ECR
         docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG
@@ -137,4 +134,7 @@ jobs:
         task-definition: ${{ steps.task-def.outputs.task-definition }}
         service: ${{ env.ECS_SERVICE }}
         cluster: ${{ env.ECS_CLUSTER }}
-        wait-for-service-stability: true 
+        wait-for-service-stability: true
+        force-new-deployment: true
+        enable-circuit-breaker: true
+        enable-rollback: true 

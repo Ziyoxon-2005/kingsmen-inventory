@@ -1,9 +1,9 @@
 {
     "family": "kingsmen-inventory",
-    "networkMode": "awsvpc",
     "requiresCompatibilities": [
         "FARGATE"
     ],
+    "networkMode": "awsvpc",
     "cpu": "256",
     "memory": "512",
     "executionRoleArn": "arn:aws:iam::521106216357:role/ecsTaskExecutionRole",
@@ -54,7 +54,7 @@
             "healthCheck": {
                 "command": [
                     "CMD-SHELL",
-                    "ps aux | grep gunicorn || exit 1"
+                    "curl -f http://localhost:8000/health/ || exit 1"
                 ],
                 "interval": 30,
                 "timeout": 5,
@@ -74,12 +74,5 @@
                 }
             ]
         }
-    ],
-    "networkConfiguration": {
-        "awsvpcConfiguration": {
-            "subnets": ["subnet-0123456789abcdef0"],
-            "securityGroups": ["sg-0123456789abcdef0"],
-            "assignPublicIp": "ENABLED"
-        }
-    }
+    ]
 } 

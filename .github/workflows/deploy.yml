@@ -145,18 +145,34 @@ jobs:
         container-name: ${{ env.CONTAINER_NAME }}
         image: ${{ env.image }}
 
-    - name: Deploy Amazon ECS task definition
-      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-      with:
-        task-definition: ${{ steps.task-def.outputs.task-definition }}
-        service: ${{ env.ECS_SERVICE }}
-        cluster: ${{ env.ECS_CLUSTER }}
-        wait-for-service-stability: false
-        force-new-deployment: true
-        enable-circuit-breaker: true
-        enable-rollback: true
-        wait-for-minutes: 2
-        deployment-configuration: '{"deploymentCircuitBreaker":{"enable":true,"rollback":true},"maximumPercent":100,"minimumHealthyPercent":0}'
+    - name: Deploy to Amazon ECS
+      run: |
+        # Register new task definition
+        echo "Registering new task definition..."
+        TASK_DEFINITION=$(aws ecs register-task-definition \
+          --cli-input-json file://${{ steps.task-def.outputs.task-definition }} \
+          --region ${{ env.AWS_REGION }} \
+          --query 'taskDefinition.taskDefinitionArn' \
+          --output text)
+        
+        echo "New task definition: $TASK_DEFINITION"
+        
+        # Update service with new task definition
+        echo "Updating service..."
+        aws ecs update-service \
+          --cluster ${{ env.ECS_CLUSTER }} \
+          --service ${{ env.ECS_SERVICE }} \
+          --task-definition $TASK_DEFINITION \
+          --network-configuration "awsvpcConfiguration={subnets=[subnet-0123456789abcdef0],securityGroups=[sg-0123456789abcdef0],assignPublicIp=ENABLED}" \
+          --force-new-deployment \
+          --region ${{ env.AWS_REGION }}
+        
+        # Wait for service to stabilize
+        echo "Waiting for service to stabilize..."
+        aws ecs wait services-stable \
+          --cluster ${{ env.ECS_CLUSTER }} \
+          --services ${{ env.ECS_SERVICE }} \
+          --region ${{ env.AWS_REGION }}
 
     - name: Verify deployment
       if: success()

@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main, master ]
 
+permissions:
+  id-token: write
+  contents: read
+
 env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY: kingsmen-inventory
@@ -74,6 +78,7 @@ jobs:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
+        mask-aws-account-id: false
 
     - name: Login to Amazon ECR
       id: login-ecr

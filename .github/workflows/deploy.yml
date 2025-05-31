@@ -95,6 +95,31 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
 
+    - name: Check AWS VPC Configuration
+      run: |
+        echo "Checking VPC configuration..."
+        
+        # List all VPCs
+        echo "Available VPCs:"
+        aws ec2 describe-vpcs --region ${{ env.AWS_REGION }} --query 'Vpcs[*].{VpcId:VpcId,CidrBlock:CidrBlock,Name:Tags[?Key==`Name`].Value|[0]}' --output table
+        
+        # List all subnets
+        echo "Available Subnets:"
+        aws ec2 describe-subnets --region ${{ env.AWS_REGION }} --query 'Subnets[*].{SubnetId:SubnetId,VpcId:VpcId,AvailabilityZone:AvailabilityZone,CidrBlock:CidrBlock}' --output table
+        
+        # List security groups
+        echo "Available Security Groups:"
+        aws ec2 describe-security-groups --region ${{ env.AWS_REGION }} --query 'SecurityGroups[*].{GroupId:GroupId,GroupName:GroupName,VpcId:VpcId}' --output table
+        
+        # Get default VPC subnets
+        echo "Default VPC Subnets:"
+        DEFAULT_VPC_ID=$(aws ec2 describe-vpcs --region ${{ env.AWS_REGION }} --filters "Name=isDefault,Values=true" --query 'Vpcs[0].VpcId' --output text)
+        if [ ! -z "$DEFAULT_VPC_ID" ]; then
+          aws ec2 describe-subnets --region ${{ env.AWS_REGION }} --filters "Name=vpc-id,Values=$DEFAULT_VPC_ID" --query 'Subnets[*].{SubnetId:SubnetId,AvailabilityZone:AvailabilityZone}' --output table
+        else
+          echo "No default VPC found"
+        fi
+
     - name: Install AWS CLI v2
       run: |
         echo "Installing AWS CLI version 2..."

@@ -184,6 +184,16 @@ jobs:
           echo "Deployment Status: $deployment_status"
           echo "Deployment ID: $deployment_id"
           
+          # Check task status and events
+          echo "Checking task status and recent events..."
+          aws ecs describe-services \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE }} \
+            --region ${{ env.AWS_REGION }} | jq -r '.services[0].events[] | select(.createdAt >= (now - 300))' > recent_events.json
+          
+          echo "Recent service events:"
+          cat recent_events.json
+          
           # Check task status
           echo "Checking task status..."
           aws ecs list-tasks \
@@ -205,11 +215,23 @@ jobs:
               task_stopped_reason=$(cat task_details.json | jq -r '.tasks[0].stoppedReason // "Not stopped"')
               container_status=$(cat task_details.json | jq -r '.tasks[0].containers[0].lastStatus')
               container_exit_code=$(cat task_details.json | jq -r '.tasks[0].containers[0].exitCode // "Not exited"')
+              container_reason=$(cat task_details.json | jq -r '.tasks[0].containers[0].reason // "No reason provided"')
               
               echo "Task Status: $task_status"
               echo "Task Stopped Reason: $task_stopped_reason"
               echo "Container Status: $container_status"
               echo "Container Exit Code: $container_exit_code"
+              echo "Container Stop Reason: $container_reason"
+              
+              # Print task definition details
+              task_def_arn=$(cat task_details.json | jq -r '.tasks[0].taskDefinitionArn')
+              echo "Task Definition: $task_def_arn"
+              aws ecs describe-task-definition \
+                --task-definition $task_def_arn \
+                --region ${{ env.AWS_REGION }} > task_def_details.json
+              
+              echo "Task Definition Details:"
+              cat task_def_details.json | jq -r '.taskDefinition | {family, revision, status, containerDefinitions}'
             done
           else
             echo "No tasks found for the service"
@@ -224,16 +246,13 @@ jobs:
           
           if [ $attempt -eq $max_attempts ]; then
             echo "Service failed to stabilize after $max_attempts attempts"
-            echo "Checking CloudWatch logs for container insights..."
+            echo "Checking service configuration..."
             
-            # Get CloudWatch logs
-            aws logs get-log-events \
-              --log-group-name "/aws/ecs/${{ env.ECS_CLUSTER }}" \
-              --log-stream-name "ecs/kingsmen-container/$deployment_id" \
-              --region ${{ env.AWS_REGION }} > container_logs.json || true
-            
-            echo "Recent container logs:"
-            cat container_logs.json | jq -r '.events[].message' || echo "No logs available"
+            # Get service configuration
+            aws ecs describe-services \
+              --cluster ${{ env.ECS_CLUSTER }} \
+              --services ${{ env.ECS_SERVICE }} \
+              --region ${{ env.AWS_REGION }} | jq '.services[0] | {deploymentConfiguration, networkConfiguration, loadBalancers, serviceRegistries}'
             
             exit 1
           fi

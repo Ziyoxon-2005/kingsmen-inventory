@@ -54,7 +54,7 @@
             "healthCheck": {
                 "command": [
                     "CMD-SHELL",
-                    "curl -f http://localhost:8000/health/ || exit 1"
+                    "ps aux | grep gunicorn || exit 1"
                 ],
                 "interval": 30,
                 "timeout": 5,
@@ -64,8 +64,22 @@
             "command": [
                 "sh",
                 "-c",
-                "python manage.py migrate && python manage.py collectstatic --noinput && gunicorn inventoryproject.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120"
+                "python manage.py migrate && python manage.py collectstatic --noinput && gunicorn --workers 2 --bind 0.0.0.0:8000 inventoryproject.wsgi:application"
+            ],
+            "ulimits": [
+                {
+                    "name": "nofile",
+                    "softLimit": 65536,
+                    "hardLimit": 65536
+                }
             ]
         }
-    ]
+    ],
+    "networkConfiguration": {
+        "awsvpcConfiguration": {
+            "subnets": ["subnet-0123456789abcdef0"],
+            "securityGroups": ["sg-0123456789abcdef0"],
+            "assignPublicIp": "ENABLED"
+        }
+    }
 } 

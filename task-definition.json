@@ -10,18 +10,15 @@
     "taskRoleArn": "arn:aws:iam::521106216357:role/ecsTaskRole",
     "containerDefinitions": [
         {
-            "name": "kingsmen-container",
-            "image": "521106216357.dkr.ecr.us-east-1.amazonaws.com/kingsmen-inventory:latest",
-            "cpu": 256,
-            "memory": 512,
+            "name": "kingsmen-inventory",
+            "image": "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}",
+            "essential": true,
             "portMappings": [
                 {
                     "containerPort": 8000,
-                    "hostPort": 8000,
                     "protocol": "tcp"
                 }
             ],
-            "essential": true,
             "environment": [
                 {
                     "name": "DJANGO_SETTINGS_MODULE",
@@ -30,25 +27,24 @@
                 {
                     "name": "DEBUG",
                     "value": "False"
-                },
-                {
-                    "name": "ALLOWED_HOSTS",
-                    "value": "*"
                 }
             ],
             "secrets": [
                 {
                     "name": "DJANGO_SECRET_KEY",
-                    "valueFrom": "arn:aws:secretsmanager:us-east-1:521106216357:secret:DJANGO_SECRET_KEY"
+                    "valueFrom": "arn:aws:ssm:${AWS_REGION}:${AWS_ACCOUNT_ID}:parameter/kingsmen/DJANGO_SECRET_KEY"
+                },
+                {
+                    "name": "DB_PASSWORD",
+                    "valueFrom": "arn:aws:ssm:${AWS_REGION}:${AWS_ACCOUNT_ID}:parameter/kingsmen/DB_PASSWORD"
                 }
             ],
             "logConfiguration": {
                 "logDriver": "awslogs",
                 "options": {
                     "awslogs-group": "/ecs/kingsmen-inventory",
-                    "awslogs-region": "us-east-1",
-                    "awslogs-stream-prefix": "ecs",
-                    "awslogs-create-group": "true"
+                    "awslogs-region": "${AWS_REGION}",
+                    "awslogs-stream-prefix": "ecs"
                 }
             },
             "healthCheck": {

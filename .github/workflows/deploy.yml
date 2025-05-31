@@ -1,123 +1,57 @@
-name: Deploy to Amazon ECS
+name: Deploy to Production
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ main, master ]
+  workflow_dispatch:
 
 env:
-  AWS_REGION: us-east-1
-  ECR_REPOSITORY: kingsmen-inventory
-  ECS_SERVICE: kingsmen-service-v2
-  ECS_CLUSTER: kingsmen-cluster-new
-  ECS_TASK_DEFINITION: kingsmen-inventory
-  CONTAINER_NAME: kingsmen-container
-
-permissions:
-  contents: read
-  id-token: write
-  packages: write
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  VPC_SUBNET: ${{ secrets.VPC_SUBNET }}
+  SECURITY_GROUP: ${{ secrets.SECURITY_GROUP }}
+  ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+  ECS_CLUSTER: ${{ secrets.ECS_CLUSTER }}
+  ECS_SERVICE: ${{ secrets.ECS_SERVICE }}
+  CONTAINER_NAME: ${{ secrets.CONTAINER_NAME }}
 
 jobs:
   deploy:
-    name: Deploy
     runs-on: ubuntu-latest
-    environment: production
-
+    
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
+    - name: Checkout code
+      uses: actions/checkout@v2
 
     - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v4
+      uses: aws-actions/configure-aws-credentials@v1
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
 
-    - name: Get VPC Information
-      run: |
-        echo "Getting VPC information..."
-        
-        # Get default VPC ID
-        DEFAULT_VPC_ID=$(aws ec2 describe-vpcs --filters "Name=isDefault,Values=true" --query 'Vpcs[0].VpcId' --output text)
-        echo "Default VPC ID: $DEFAULT_VPC_ID"
-        
-        if [ ! -z "$DEFAULT_VPC_ID" ]; then
-          # Get subnet in the default VPC
-          SUBNET_ID=$(aws ec2 describe-subnets \
-            --filters "Name=vpc-id,Values=$DEFAULT_VPC_ID" \
-            --query 'Subnets[0].SubnetId' \
-            --output text)
-          echo "First Subnet ID: $SUBNET_ID"
-          
-          # Get default security group
-          SECURITY_GROUP_ID=$(aws ec2 describe-security-groups \
-            --filters "Name=vpc-id,Values=$DEFAULT_VPC_ID" \
-            --query 'SecurityGroups[0].GroupId' \
-            --output text)
-          echo "Security Group ID: $SECURITY_GROUP_ID"
-          
-          # Set as environment variables
-          echo "VPC_SUBNET=$SUBNET_ID" >> $GITHUB_ENV
-          echo "SECURITY_GROUP=$SECURITY_GROUP_ID" >> $GITHUB_ENV
-        else
-          echo "No default VPC found"
-          exit 1
-        fi
-
     - name: Login to Amazon ECR
       id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v2
-      with:
-        mask-password: true
+      uses: aws-actions/amazon-ecr-login@v1
 
-    - name: Build and push image to Amazon ECR
-      id: build-image
+    - name: Build and push Docker image
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         IMAGE_TAG: ${{ github.sha }}
       run: |
-        echo "Building Docker image..."
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-        echo "Pushing image to ECR..."
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-        echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_ENV
+        echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
-    - name: Fill in the new image ID in the Amazon ECS task definition
-      id: task-def
-      uses: aws-actions/amazon-ecs-render-task-definition@v1
-      with:
-        task-definition: task-definition.json
-        container-name: ${{ env.CONTAINER_NAME }}
-        image: ${{ env.image }}
-
-    - name: Deploy to Amazon ECS
+    - name: Update ECS service
       run: |
-        # Register new task definition
-        echo "Registering new task definition..."
-        TASK_DEFINITION=$(aws ecs register-task-definition \
-          --cli-input-json file://${{ steps.task-def.outputs.task-definition }} \
-          --region ${{ env.AWS_REGION }} \
-          --query 'taskDefinition.taskDefinitionArn' \
-          --output text)
-        
-        echo "New task definition: $TASK_DEFINITION"
-        
-        # Update service with new task definition
-        echo "Updating service..."
         aws ecs update-service \
           --cluster ${{ env.ECS_CLUSTER }} \
           --service ${{ env.ECS_SERVICE }} \
-          --task-definition $TASK_DEFINITION \
-          --network-configuration "awsvpcConfiguration={subnets=[${{ env.VPC_SUBNET }}],securityGroups=[${{ env.SECURITY_GROUP }}],assignPublicIp=ENABLED}" \
           --force-new-deployment \
-          --region ${{ env.AWS_REGION }}
-        
-        # Wait for service to stabilize
-        echo "Waiting for service to stabilize..."
+          --network-configuration "awsvpcConfiguration={subnets=[${{ env.VPC_SUBNET }}],securityGroups=[${{ env.SECURITY_GROUP }}],assignPublicIp=ENABLED}"
+
+    - name: Wait for service stability
+      run: |
         aws ecs wait services-stable \
           --cluster ${{ env.ECS_CLUSTER }} \
-          --services ${{ env.ECS_SERVICE }} \
-          --region ${{ env.AWS_REGION }} 
+          --services ${{ env.ECS_SERVICE }} 

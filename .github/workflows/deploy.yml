@@ -68,16 +68,16 @@ jobs:
         
     - name: Run tests
       env:
-        DJANGO_SETTINGS_MODULE: inventoryproject.settings
+        DJANGO_SETTINGS_MODULE: inventoryproject.test_settings
         SECRET_KEY: test-key-for-ci
         DEBUG: 'True'
         ALLOWED_HOSTS: localhost,127.0.0.1
-        DATABASE_URL: sqlite:///db.sqlite3
       run: |
+        mkdir -p test_static test_media
         python manage.py makemigrations
         python manage.py migrate
-        python manage.py collectstatic --noinput
-        python manage.py test
+        python manage.py collectstatic --noinput --settings=inventoryproject.test_settings
+        python manage.py test --settings=inventoryproject.test_settings
         
   deploy:
     name: Deploy

@@ -1,10 +1,10 @@
-from django.test import TestCase, Client
+from django.test import TestCase, Client, override_settings
 from django.urls import reverse
 from django.contrib.auth.models import User
-from django.test import override_settings
+from django.conf import settings
+import os
 from .models import Product, Order
 
-@override_settings(STATICFILES_STORAGE='django.contrib.staticfiles.storage.StaticFilesStorage')
 class DashboardTest(TestCase):
     def setUp(self):
         self.client = Client()
@@ -16,6 +16,9 @@ class DashboardTest(TestCase):
             name='Test Product',
             quantity=10
         )
+        
+        # Ensure static files directory exists
+        os.makedirs(settings.STATIC_ROOT, exist_ok=True)
         
     def test_login_required(self):
         response = self.client.get(reverse('dashboard-index'))

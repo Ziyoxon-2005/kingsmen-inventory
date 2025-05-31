@@ -163,20 +163,57 @@ jobs:
       run: |
         echo "Waiting for service to stabilize..."
         attempt=1
-        max_attempts=3
+        max_attempts=5
         
         while [ $attempt -le $max_attempts ]; do
           echo "Attempt $attempt of $max_attempts"
           
           # Check service status
+          echo "Checking service status..."
           aws ecs describe-services \
             --cluster ${{ env.ECS_CLUSTER }} \
             --services ${{ env.ECS_SERVICE }} \
             --region ${{ env.AWS_REGION }} > service_status.json
           
-          # Check if service is stable
+          # Get service details
           running_count=$(cat service_status.json | jq -r '.services[0].runningCount')
           desired_count=$(cat service_status.json | jq -r '.services[0].desiredCount')
+          deployment_status=$(cat service_status.json | jq -r '.services[0].deployments[0].status')
+          deployment_id=$(cat service_status.json | jq -r '.services[0].deployments[0].id')
+          
+          echo "Deployment Status: $deployment_status"
+          echo "Deployment ID: $deployment_id"
+          
+          # Check task status
+          echo "Checking task status..."
+          aws ecs list-tasks \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service ${{ env.ECS_SERVICE }} \
+            --region ${{ env.AWS_REGION }} > tasks.json
+          
+          task_arns=$(cat tasks.json | jq -r '.taskArns[]' 2>/dev/null)
+          
+          if [ ! -z "$task_arns" ]; then
+            for task_arn in $task_arns; do
+              echo "Getting details for task: $task_arn"
+              aws ecs describe-tasks \
+                --cluster ${{ env.ECS_CLUSTER }} \
+                --tasks $task_arn \
+                --region ${{ env.AWS_REGION }} > task_details.json
+              
+              task_status=$(cat task_details.json | jq -r '.tasks[0].lastStatus')
+              task_stopped_reason=$(cat task_details.json | jq -r '.tasks[0].stoppedReason // "Not stopped"')
+              container_status=$(cat task_details.json | jq -r '.tasks[0].containers[0].lastStatus')
+              container_exit_code=$(cat task_details.json | jq -r '.tasks[0].containers[0].exitCode // "Not exited"')
+              
+              echo "Task Status: $task_status"
+              echo "Task Stopped Reason: $task_stopped_reason"
+              echo "Container Status: $container_status"
+              echo "Container Exit Code: $container_exit_code"
+            done
+          else
+            echo "No tasks found for the service"
+          fi
           
           if [ "$running_count" -eq "$desired_count" ]; then
             echo "Service is stable! Running count matches desired count ($running_count/$desired_count)"
@@ -187,9 +224,21 @@ jobs:
           
           if [ $attempt -eq $max_attempts ]; then
             echo "Service failed to stabilize after $max_attempts attempts"
+            echo "Checking CloudWatch logs for container insights..."
+            
+            # Get CloudWatch logs
+            aws logs get-log-events \
+              --log-group-name "/aws/ecs/${{ env.ECS_CLUSTER }}" \
+              --log-stream-name "ecs/kingsmen-container/$deployment_id" \
+              --region ${{ env.AWS_REGION }} > container_logs.json || true
+            
+            echo "Recent container logs:"
+            cat container_logs.json | jq -r '.events[].message' || echo "No logs available"
+            
             exit 1
           fi
           
+          echo "Waiting 60 seconds before next attempt..."
           attempt=$((attempt + 1))
           sleep 60
         done 

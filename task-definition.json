@@ -30,6 +30,10 @@
                 {
                     "name": "DEBUG",
                     "value": "False"
+                },
+                {
+                    "name": "ALLOWED_HOSTS",
+                    "value": "*"
                 }
             ],
             "secrets": [
@@ -43,9 +47,25 @@
                 "options": {
                     "awslogs-group": "/ecs/kingsmen-inventory",
                     "awslogs-region": "us-east-1",
-                    "awslogs-stream-prefix": "ecs"
+                    "awslogs-stream-prefix": "ecs",
+                    "awslogs-create-group": "true"
                 }
-            }
+            },
+            "healthCheck": {
+                "command": [
+                    "CMD-SHELL",
+                    "python manage.py check || exit 1"
+                ],
+                "interval": 30,
+                "timeout": 5,
+                "retries": 3,
+                "startPeriod": 60
+            },
+            "command": [
+                "sh",
+                "-c",
+                "python manage.py migrate && python manage.py collectstatic --noinput && gunicorn inventoryproject.wsgi:application --bind 0.0.0.0:8000"
+            ]
         }
     ]
 } 

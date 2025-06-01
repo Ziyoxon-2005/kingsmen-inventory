@@ -18,11 +18,8 @@ jobs:
             cd /home/ubuntu/Django-Inventory-Management-System
             git pull origin main
             source venv/bin/activate
-            pip install --no-deps Django==3.2.23
-            pip install --no-deps django-crispy-forms==1.14.0
-            pip install --no-deps crispy-bootstrap4==2022.1
-            pip install --no-deps whitenoise==6.0.0
-            pip install --no-deps gunicorn==20.1.0
-            pip install --no-deps python-decouple==3.8
+            pip uninstall -y urllib3 botocore boto3
+            pip install urllib3==1.26.18
+            pip install -r requirements.txt
             python manage.py migrate
             sudo systemctl restart gunicorn 

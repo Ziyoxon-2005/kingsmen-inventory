@@ -1,57 +1,28 @@
-name: Deploy to Production
+name: Deploy to EC2
 
 on:
   push:
-    branches: [ main, master ]
-  workflow_dispatch:
-
-env:
-  AWS_REGION: ${{ secrets.AWS_REGION }}
-  VPC_SUBNET: ${{ secrets.VPC_SUBNET }}
-  SECURITY_GROUP: ${{ secrets.SECURITY_GROUP }}
-  ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
-  ECS_CLUSTER: ${{ secrets.ECS_CLUSTER }}
-  ECS_SERVICE: ${{ secrets.ECS_SERVICE }}
-  CONTAINER_NAME: ${{ secrets.CONTAINER_NAME }}
+    branches: [ "main" ]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ env.AWS_REGION }}
-
-    - name: Login to Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v1
-
-    - name: Build and push Docker image
-      env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        IMAGE_TAG: ${{ github.sha }}
-      run: |
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-        echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
-
-    - name: Update ECS service
-      run: |
-        aws ecs update-service \
-          --cluster ${{ env.ECS_CLUSTER }} \
-          --service ${{ env.ECS_SERVICE }} \
-          --force-new-deployment \
-          --network-configuration "awsvpcConfiguration={subnets=[${{ env.VPC_SUBNET }}],securityGroups=[${{ env.SECURITY_GROUP }}],assignPublicIp=ENABLED}"
-
-    - name: Wait for service stability
-      run: |
-        aws ecs wait services-stable \
-          --cluster ${{ env.ECS_CLUSTER }} \
-          --services ${{ env.ECS_SERVICE }} 
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /home/ubuntu/Django-Inventory-Management-System
+            git pull origin main
+            source venv/bin/activate
+            pip install --no-deps Django==3.2.23
+            pip install --no-deps django-crispy-forms==1.14.0
+            pip install --no-deps crispy-bootstrap4==2022.1
+            pip install --no-deps whitenoise==6.0.0
+            pip install --no-deps gunicorn==20.1.0
+            pip install --no-deps python-decouple==3.8
+            python manage.py migrate
+            sudo systemctl restart gunicorn 

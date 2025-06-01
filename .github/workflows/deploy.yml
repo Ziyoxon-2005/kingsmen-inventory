@@ -20,11 +20,7 @@ jobs:
             rm -rf venv
             python3 -m venv venv
             source venv/bin/activate
-            pip install --no-cache-dir Django==3.2.23
-            pip install --no-cache-dir django-crispy-forms==1.14.0
-            pip install --no-cache-dir crispy-bootstrap4==2022.1
-            pip install --no-cache-dir whitenoise==6.0.0
-            pip install --no-cache-dir gunicorn==20.1.0
+            pip install --no-cache-dir -r requirements.txt
             python manage.py collectstatic --noinput
             python manage.py migrate
             sudo systemctl restart gunicorn 

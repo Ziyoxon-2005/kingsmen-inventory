@@ -32,7 +32,7 @@ SECRET_KEY = 'n7)kkdn%^rrz9*3@#o3&p!y$b^)4uuc_^9h&_f5^p*-p#qb)!4'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 # settings.py ichida
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
